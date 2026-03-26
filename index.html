@@ -80,6 +80,26 @@ header p {
   color: #aaa;
 }
 
+/* 🔥 UPGRADED BUTTON */
+.btn {
+  display: inline-block;
+  margin-top: 25px;
+  padding: 14px 28px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #8b5cf6, #2563eb);
+  color: white;
+  text-decoration: none;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+  transition: all 0.3s ease;
+  box-shadow: 0 0 15px rgba(139,92,246,0.4);
+}
+
+.btn:hover {
+  transform: scale(1.1);
+  box-shadow: 0 0 30px rgba(139,92,246,0.7);
+}
+
 /* SECTIONS */
 section {
   padding: 100px 10%;
@@ -105,22 +125,6 @@ section {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
   gap: 20px;
-}
-
-/* BUTTON */
-.btn {
-  display: inline-block;
-  margin-top: 20px;
-  padding: 10px 20px;
-  border-radius: 999px;
-  background: linear-gradient(90deg, #8b5cf6, #2563eb);
-  color: white;
-  text-decoration: none;
-  transition: 0.3s;
-}
-
-.btn:hover {
-  transform: scale(1.05);
 }
 
 /* FADE ANIMATION */
@@ -149,12 +153,15 @@ footer {
   <a href="#about">About</a>
   <a href="#projects">Projects</a>
   <a href="#contact">Contact</a>
+  <a href="/hire" class="btn">Hire Me</a>
 </nav>
 
 <header>
   <h1>Emma <span>Dev</span></h1>
   <p>16 y/o developer from Sweden 🇸🇪</p>
   <p>Building systems, servers & web experiences.</p>
+
+  <a href="/hire" class="btn">Hire Me</a>
 </header>
 
 <section id="about" class="fade">
@@ -171,14 +178,12 @@ footer {
   <h2>Projects</h2>
 
   <div class="grid">
-
     <div class="card">
       <h3>N5XH DUPE</h3>
       <p>Minecraft Server</p>
       <p>IP: n5xhdupe.minefort.com</p>
       <a class="btn" href="https://n5xhdupe.com" target="_blank">Visit</a>
     </div>
-
   </div>
 </section>
 
