@@ -131,7 +131,7 @@ form.addEventListener("submit", async (e) => {
   btn.disabled = true;
 
   try {
-    const res = await fetch("/api/hire", {
+    const res = await fetch("https://bott-production-bfa4.up.railway.app/send", {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
