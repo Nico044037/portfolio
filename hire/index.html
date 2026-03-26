@@ -1,28 +1,164 @@
-<script type="module">
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<title>Hire Emma</title>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 
-const supabase = createClient(
-  "https://tcriprefqmwvbojchzyr.supabase.co",
-  "PASTE_YOUR_sb_publishable_KEY_HERE"
-);
+<style>
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: 'Inter', sans-serif;
+}
 
-document.getElementById("hireForm").addEventListener("submit", async (e) => {
+body {
+  background: #050505;
+  color: white;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+  overflow: hidden;
+}
+
+/* animated background */
+body::before {
+  content: "";
+  position: fixed;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(circle at 30% 30%, #8b5cf6, transparent),
+              radial-gradient(circle at 70% 70%, #2563eb, transparent);
+  animation: moveBg 10s linear infinite;
+  opacity: 0.2;
+  z-index: -1;
+}
+
+@keyframes moveBg {
+  0% { transform: translate(0,0); }
+  50% { transform: translate(-10%, -10%); }
+  100% { transform: translate(0,0); }
+}
+
+form {
+  background: rgba(255,255,255,0.05);
+  backdrop-filter: blur(15px);
+  padding: 35px;
+  border-radius: 20px;
+  width: 340px;
+  animation: fadeIn 1s ease forwards;
+}
+
+h2 {
+  margin-bottom: 15px;
+}
+
+input, textarea {
+  width: 100%;
+  margin: 10px 0;
+  padding: 12px;
+  border: none;
+  border-radius: 10px;
+  background: #111;
+  color: white;
+}
+
+textarea {
+  resize: none;
+  height: 100px;
+}
+
+button {
+  width: 100%;
+  padding: 12px;
+  border: none;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #8b5cf6, #2563eb);
+  color: white;
+  cursor: pointer;
+  transition: 0.3s;
+}
+
+button:hover {
+  transform: scale(1.05);
+}
+
+/* success message */
+.success {
+  text-align: center;
+  font-size: 1.2rem;
+  display: none;
+}
+
+@keyframes fadeIn {
+  from {opacity: 0; transform: translateY(20px);}
+  to {opacity: 1; transform: translateY(0);}
+}
+</style>
+</head>
+
+<body>
+
+<form id="hireForm">
+  <h2>Hire Me</h2>
+
+  <input type="text" id="name" placeholder="Your name" required>
+  <input type="email" id="email" placeholder="Your email" required>
+  <textarea id="message" placeholder="What do you need?" required></textarea>
+
+  <button id="submitBtn" type="submit">Send Request</button>
+
+  <div class="success" id="successMsg">
+    🚀 Request sent!
+  </div>
+</form>
+
+<script>
+const form = document.getElementById("hireForm");
+const btn = document.getElementById("submitBtn");
+const success = document.getElementById("successMsg");
+
+form.addEventListener("submit", async (e) => {
   e.preventDefault();
 
   const name = document.getElementById("name").value;
   const email = document.getElementById("email").value;
   const message = document.getElementById("message").value;
 
-  const { error } = await supabase
-    .from("hire_requests")
-    .insert([{ name, email, message }]);
+  btn.innerText = "Sending...";
+  btn.disabled = true;
 
-  if (error) {
-    alert("Error: " + error.message);
-    console.error(error);
-  } else {
-    alert("Request sent 🚀");
-    document.getElementById("hireForm").reset();
+  try {
+    const res = await fetch("/api/hire", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ name, email, message })
+    });
+
+    const data = await res.json();
+
+    if (data.error) {
+      alert(data.error);
+      btn.innerText = "Send Request";
+      btn.disabled = false;
+      return;
+    }
+
+    form.reset();
+    success.style.display = "block";
+    btn.style.display = "none";
+
+  } catch (err) {
+    alert("Something went wrong");
+    btn.innerText = "Send Request";
+    btn.disabled = false;
   }
 });
 </script>
+
+</body>
+</html>
