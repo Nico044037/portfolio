@@ -23,7 +23,7 @@ body {
   overflow: hidden;
 }
 
-/* 💣 animated red background */
+/* 💣 animated background */
 body::before {
   content: "";
   position: fixed;
@@ -90,7 +90,7 @@ button:hover {
   box-shadow: 0 0 30px rgba(255,0,0,0.7);
 }
 
-/* success */
+/* success message */
 .success {
   text-align: center;
   margin-top: 15px;
@@ -129,31 +129,40 @@ const success = document.getElementById("success");
 form.addEventListener("submit", async (e) => {
   e.preventDefault();
 
+  const name = document.getElementById("name").value;
+  const email = document.getElementById("email").value;
+  const message = document.getElementById("message").value;
+
   btn.innerText = "Sending...";
   btn.disabled = true;
 
-  const res = await fetch("/api/hire-explosive", {
-    method: "POST",
-    headers: {"Content-Type": "application/json"},
-    body: JSON.stringify({
-      name: name.value,
-      email: email.value,
-      message: message.value
-    })
-  });
+  try {
+    const res = await fetch("/api/hire-explosive", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json"
+      },
+      body: JSON.stringify({ name, email, message })
+    });
 
-  const data = await res.json();
+    const data = await res.json();
 
-  if (data.error) {
-    alert(data.error);
+    if (data.error) {
+      alert(data.error);
+      btn.innerText = "Send Request";
+      btn.disabled = false;
+      return;
+    }
+
+    form.reset();
+    btn.style.display = "none";
+    success.style.display = "block";
+
+  } catch (err) {
+    alert("Something went wrong");
     btn.innerText = "Send Request";
     btn.disabled = false;
-    return;
   }
-
-  form.reset();
-  btn.style.display = "none";
-  success.style.display = "block";
 });
 </script>
 
