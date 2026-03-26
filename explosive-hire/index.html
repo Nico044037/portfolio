@@ -1,0 +1,27 @@
+<form id="form">
+  <h2>Hire AvoidMyExplosive</h2>
+
+  <input id="name" placeholder="Name" required>
+  <input id="email" placeholder="Email" required>
+  <textarea id="message" placeholder="Message" required></textarea>
+
+  <button>Send</button>
+</form>
+
+<script>
+document.getElementById("form").addEventListener("submit", async (e) => {
+  e.preventDefault();
+
+  await fetch("/api/hire-explosive", {
+    method: "POST",
+    headers: {"Content-Type": "application/json"},
+    body: JSON.stringify({
+      name: name.value,
+      email: email.value,
+      message: message.value
+    })
+  });
+
+  alert("Sent 💣");
+});
+</script>
