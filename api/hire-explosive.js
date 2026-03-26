@@ -1,5 +1,3 @@
-// /api/hire-explosive.js
-
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
@@ -12,21 +10,16 @@ export default async function handler(req, res) {
   }
 
   try {
-    await fetch(process.env.DISCORD_WEBHOOK_EXPLOSIVE, {
+    await fetch("https://bott-production-bfa4.up.railway.app/send", {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        embeds: [{
-          title: "💣 Hire AvoidMyExplosive",
-          color: 16711680,
-          fields: [
-            { name: "Name", value: name, inline: true },
-            { name: "Email", value: email, inline: true },
-            { name: "Message", value: message }
-          ]
-        }]
+        type: "explosive",
+        name,
+        email,
+        message
       })
     });
 
