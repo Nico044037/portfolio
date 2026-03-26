@@ -2,8 +2,10 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Hire AvoidMyExplosive</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AvoidMyExplosive | Developer</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;500;700&display=swap" rel="stylesheet">
 
 <style>
 * {
@@ -16,14 +18,10 @@
 body {
   background: #050505;
   color: white;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 100vh;
-  overflow: hidden;
+  overflow-x: hidden;
 }
 
-/* 💣 animated background */
+/* 💣 animated red background */
 body::before {
   content: "";
   position: fixed;
@@ -32,8 +30,8 @@ body::before {
   background: radial-gradient(circle at 30% 30%, #ff0000, transparent),
               radial-gradient(circle at 70% 70%, #ff4d4d, transparent);
   animation: moveBg 10s linear infinite;
-  opacity: 0.2;
   z-index: -1;
+  opacity: 0.2;
 }
 
 @keyframes moveBg {
@@ -42,128 +40,175 @@ body::before {
   100% { transform: translate(0,0); }
 }
 
-/* 💎 glass form */
-form {
-  background: rgba(255,255,255,0.05);
-  backdrop-filter: blur(15px);
-  padding: 35px;
-  border-radius: 20px;
-  width: 340px;
-  animation: fadeIn 1s ease forwards;
+/* NAV */
+nav {
+  position: fixed;
+  top: 20px;
+  right: 40px;
 }
 
-h2 {
-  margin-bottom: 15px;
+nav a {
+  margin-left: 20px;
+  text-decoration: none;
+  color: #ccc;
+  transition: 0.3s;
 }
 
-/* inputs */
-input, textarea {
-  width: 100%;
-  margin: 10px 0;
-  padding: 12px;
-  border: none;
-  border-radius: 10px;
-  background: #111;
+nav a:hover {
   color: white;
 }
 
-textarea {
-  resize: none;
-  height: 100px;
+/* HERO */
+header {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding-left: 10%;
 }
 
-/* 💣 button */
-button {
-  width: 100%;
-  padding: 12px;
-  border: none;
+header h1 {
+  font-size: 4rem;
+}
+
+header span {
+  color: #ff3b3b;
+}
+
+header p {
+  margin-top: 15px;
+  color: #aaa;
+}
+
+/* BUTTON */
+.btn {
+  display: inline-block;
+  margin-top: 25px;
+  padding: 14px 28px;
   border-radius: 999px;
   background: linear-gradient(90deg, #ff0000, #ff4d4d);
   color: white;
-  cursor: pointer;
+  text-decoration: none;
   transition: 0.3s;
   box-shadow: 0 0 15px rgba(255,0,0,0.4);
 }
 
-button:hover {
-  transform: scale(1.08);
+.btn:hover {
+  transform: scale(1.1);
   box-shadow: 0 0 30px rgba(255,0,0,0.7);
 }
 
-/* success message */
-.success {
-  text-align: center;
-  margin-top: 15px;
-  display: none;
+/* SECTIONS */
+section {
+  padding: 100px 10%;
 }
 
-/* animation */
-@keyframes fadeIn {
-  from {opacity: 0; transform: translateY(20px);}
-  to {opacity: 1; transform: translateY(0);}
+/* CARD */
+.card {
+  background: rgba(255,255,255,0.05);
+  backdrop-filter: blur(15px);
+  padding: 25px;
+  border-radius: 20px;
+  margin-top: 20px;
+  transition: 0.3s;
+}
+
+.card:hover {
+  transform: translateY(-8px);
+  box-shadow: 0 0 30px rgba(255,0,0,0.3);
+}
+
+/* GRID */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+  gap: 20px;
+}
+
+/* FADE */
+.fade {
+  opacity: 0;
+  transform: translateY(40px);
+  transition: 1s;
+}
+
+.fade.show {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+footer {
+  text-align: center;
+  padding: 50px;
+  color: #666;
 }
 </style>
 </head>
 
 <body>
 
-<form id="form">
-  <h2>💣 Hire AvoidMyExplosive</h2>
+<nav>
+  <a href="#about">About</a>
+  <a href="#projects">Projects</a>
+  <a href="#contact">Contact</a>
+  <a href="/explosive-hire" class="btn">Hire Me</a>
+</nav>
 
-  <input id="name" placeholder="Your name" required>
-  <input id="email" type="email" placeholder="Your email" required>
-  <textarea id="message" placeholder="What do you need?" required></textarea>
+<header>
+  <h1>AvoidMy<span>Explosive</span></h1>
+  <p>13 y/o developer from N5XH DUPE 💣</p>
+  <p>Building servers, systems & chaotic ideas.</p>
 
-  <button id="btn">Send Request</button>
+  <a href="/explosive-hire" class="btn">Hire Me</a>
+</header>
 
-  <div class="success" id="success">
-    🚀 Request sent!
+<section id="about" class="fade">
+  <h2>About</h2>
+  <div class="card">
+    <p>
+      I'm AvoidMyExplosive, a 13-year-old developer working on Minecraft servers,
+      systems, and experimental projects. I like creating things that are fun,
+      powerful, and sometimes a little chaotic.
+    </p>
   </div>
-</form>
+</section>
+
+<section id="projects" class="fade">
+  <h2>Projects</h2>
+
+  <div class="grid">
+    <div class="card">
+      <h3>N5XH DUPE</h3>
+      <p>Minecraft Server</p>
+      <p>IP: n5xhdupe.minefort.com</p>
+      <a class="btn" href="https://n5xhdupe.com" target="_blank">Visit</a>
+    </div>
+  </div>
+</section>
+
+<section id="contact" class="fade">
+  <h2>Contact</h2>
+  <div class="card">
+    <p>Available for projects, collaborations, and ideas.</p>
+  </div>
+</section>
+
+<footer>
+  © 2026 AvoidMyExplosive
+</footer>
 
 <script>
-const form = document.getElementById("form");
-const btn = document.getElementById("btn");
-const success = document.getElementById("success");
+const faders = document.querySelectorAll('.fade');
 
-form.addEventListener("submit", async (e) => {
-  e.preventDefault();
-
-  const name = document.getElementById("name").value;
-  const email = document.getElementById("email").value;
-  const message = document.getElementById("message").value;
-
-  btn.innerText = "Sending...";
-  btn.disabled = true;
-
-  try {
-    const res = await fetch("/api/hire-explosive", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({ name, email, message })
-    });
-
-    const data = await res.json();
-
-    if (data.error) {
-      alert(data.error);
-      btn.innerText = "Send Request";
-      btn.disabled = false;
-      return;
+const observer = new IntersectionObserver(entries => {
+  entries.forEach(entry => {
+    if(entry.isIntersecting){
+      entry.target.classList.add('show');
     }
+  });
+}, { threshold: 0.2 });
 
-    form.reset();
-    btn.style.display = "none";
-    success.style.display = "block";
-
-  } catch (err) {
-    alert("Something went wrong");
-    btn.innerText = "Send Request";
-    btn.disabled = false;
-  }
-});
+faders.forEach(el => observer.observe(el));
 </script>
 
 </body>
