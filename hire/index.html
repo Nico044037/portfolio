@@ -1,0 +1,28 @@
+<script type="module">
+import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+
+const supabase = createClient(
+  "https://tcriprefqmwvbojchzyr.supabase.co",
+  "PASTE_YOUR_sb_publishable_KEY_HERE"
+);
+
+document.getElementById("hireForm").addEventListener("submit", async (e) => {
+  e.preventDefault();
+
+  const name = document.getElementById("name").value;
+  const email = document.getElementById("email").value;
+  const message = document.getElementById("message").value;
+
+  const { error } = await supabase
+    .from("hire_requests")
+    .insert([{ name, email, message }]);
+
+  if (error) {
+    alert("Error: " + error.message);
+    console.error(error);
+  } else {
+    alert("Request sent 🚀");
+    document.getElementById("hireForm").reset();
+  }
+});
+</script>
