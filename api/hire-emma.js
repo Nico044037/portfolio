@@ -1,5 +1,3 @@
-// /api/hire-emma.js
-
 export default async function handler(req, res) {
   if (req.method !== "POST") {
     return res.status(405).json({ error: "Method not allowed" });
@@ -12,21 +10,16 @@ export default async function handler(req, res) {
   }
 
   try {
-    await fetch(process.env.DISCORD_WEBHOOK_EMMA, {
+    await fetch("https://YOUR-PY-SERVER/send", {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        embeds: [{
-          title: "💼 Hire Emma",
-          color: 5814783,
-          fields: [
-            { name: "Name", value: name, inline: true },
-            { name: "Email", value: email, inline: true },
-            { name: "Message", value: message }
-          ]
-        }]
+        type: "emma",
+        name,
+        email,
+        message
       })
     });
 
