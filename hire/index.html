@@ -23,7 +23,7 @@ body {
   overflow: hidden;
 }
 
-/* animated background */
+/* 🌌 animated background */
 body::before {
   content: "";
   position: fixed;
@@ -42,6 +42,7 @@ body::before {
   100% { transform: translate(0,0); }
 }
 
+/* 💎 form */
 form {
   background: rgba(255,255,255,0.05);
   backdrop-filter: blur(15px);
@@ -55,6 +56,7 @@ h2 {
   margin-bottom: 15px;
 }
 
+/* inputs */
 input, textarea {
   width: 100%;
   margin: 10px 0;
@@ -70,6 +72,7 @@ textarea {
   height: 100px;
 }
 
+/* 🔘 button */
 button {
   width: 100%;
   padding: 12px;
@@ -85,13 +88,23 @@ button:hover {
   transform: scale(1.05);
 }
 
-/* success message */
+/* success */
 .success {
   text-align: center;
   font-size: 1.2rem;
   display: none;
+  margin-top: 10px;
 }
 
+/* error */
+.error {
+  text-align: center;
+  color: #ff4d4d;
+  display: none;
+  margin-top: 10px;
+}
+
+/* animation */
 @keyframes fadeIn {
   from {opacity: 0; transform: translateY(20px);}
   to {opacity: 1; transform: translateY(0);}
@@ -102,7 +115,7 @@ button:hover {
 <body>
 
 <form id="hireForm">
-  <h2>Hire Me</h2>
+  <h2>Hire Emma</h2>
 
   <input type="text" id="name" placeholder="Your name" required>
   <input type="email" id="email" placeholder="Your email" required>
@@ -110,15 +123,15 @@ button:hover {
 
   <button id="submitBtn" type="submit">Send Request</button>
 
-  <div class="success" id="successMsg">
-    🚀 Request sent!
-  </div>
+  <div class="success" id="successMsg">🚀 Request sent!</div>
+  <div class="error" id="errorMsg"></div>
 </form>
 
 <script>
 const form = document.getElementById("hireForm");
 const btn = document.getElementById("submitBtn");
 const success = document.getElementById("successMsg");
+const errorBox = document.getElementById("errorMsg");
 
 form.addEventListener("submit", async (e) => {
   e.preventDefault();
@@ -129,6 +142,7 @@ form.addEventListener("submit", async (e) => {
 
   btn.innerText = "Sending...";
   btn.disabled = true;
+  errorBox.style.display = "none";
 
   try {
     const res = await fetch("https://bott-production-bfa4.up.railway.app/send", {
@@ -136,13 +150,19 @@ form.addEventListener("submit", async (e) => {
       headers: {
         "Content-Type": "application/json"
       },
-      body: JSON.stringify({ name, email, message })
+      body: JSON.stringify({
+        type: "emma",
+        name,
+        email,
+        message
+      })
     });
 
     const data = await res.json();
 
-    if (data.error) {
-      alert(data.error);
+    if (!res.ok || data.error) {
+      errorBox.innerText = data.error || "Failed to send";
+      errorBox.style.display = "block";
       btn.innerText = "Send Request";
       btn.disabled = false;
       return;
@@ -153,7 +173,8 @@ form.addEventListener("submit", async (e) => {
     btn.style.display = "none";
 
   } catch (err) {
-    alert("Something went wrong");
+    errorBox.innerText = "Connection error (check backend)";
+    errorBox.style.display = "block";
     btn.innerText = "Send Request";
     btn.disabled = false;
   }
