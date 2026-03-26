@@ -10,7 +10,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    await fetch("https://YOUR-PY-SERVER/send", {
+    await fetch("https://bott-production-bfa4.up.railway.app/send", {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
