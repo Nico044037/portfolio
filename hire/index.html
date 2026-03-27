@@ -2,8 +2,10 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>Hire Emma</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Emma | Developer</title>
+
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;500;700&display=swap" rel="stylesheet">
 
 <style>
 * {
@@ -16,24 +18,20 @@
 body {
   background: #050505;
   color: white;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 100vh;
-  overflow: hidden;
+  overflow-x: hidden;
 }
 
-/* 🌌 animated background */
+/* 🌌 Animated gradient */
 body::before {
   content: "";
   position: fixed;
   width: 200%;
   height: 200%;
-  background: radial-gradient(circle at 30% 30%, #8b5cf6, transparent),
+  background: radial-gradient(circle at 30% 30%, #6d28d9, transparent),
               radial-gradient(circle at 70% 70%, #2563eb, transparent);
   animation: moveBg 10s linear infinite;
-  opacity: 0.2;
   z-index: -1;
+  opacity: 0.2;
 }
 
 @keyframes moveBg {
@@ -42,143 +40,184 @@ body::before {
   100% { transform: translate(0,0); }
 }
 
-/* 💎 form */
-form {
+nav {
+  position: fixed;
+  top: 20px;
+  right: 40px;
+}
+
+nav a {
+  margin-left: 20px;
+  text-decoration: none;
+  color: #ccc;
+}
+
+nav a:hover {
+  color: white;
+}
+
+/* HERO */
+header {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding-left: 10%;
+}
+
+header h1 {
+  font-size: 4rem;
+}
+
+header span {
+  color: #8b5cf6;
+}
+
+header p {
+  margin-top: 15px;
+  color: #aaa;
+}
+
+/* BUTTON */
+.btn {
+  display: inline-block;
+  margin-top: 25px;
+  padding: 14px 28px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #8b5cf6, #2563eb);
+  color: white;
+  text-decoration: none;
+  cursor: pointer;
+}
+
+/* MODAL */
+.modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.7);
+  display: none;
+  justify-content: center;
+  align-items: center;
+}
+
+.modal-content {
   background: rgba(255,255,255,0.05);
   backdrop-filter: blur(15px);
-  padding: 35px;
+  padding: 30px;
   border-radius: 20px;
-  width: 340px;
-  animation: fadeIn 1s ease forwards;
+  width: 300px;
 }
 
-h2 {
-  margin-bottom: 15px;
-}
-
-/* inputs */
 input, textarea {
   width: 100%;
   margin: 10px 0;
-  padding: 12px;
-  border: none;
+  padding: 10px;
   border-radius: 10px;
+  border: none;
   background: #111;
   color: white;
 }
 
-textarea {
-  resize: none;
-  height: 100px;
-}
-
-/* 🔘 button */
-button {
-  width: 100%;
-  padding: 12px;
-  border: none;
-  border-radius: 999px;
-  background: linear-gradient(90deg, #8b5cf6, #2563eb);
-  color: white;
-  cursor: pointer;
-  transition: 0.3s;
-}
-
-button:hover {
-  transform: scale(1.05);
-}
-
-/* success */
 .success {
   text-align: center;
-  font-size: 1.2rem;
   display: none;
-  margin-top: 10px;
 }
 
-/* error */
-.error {
-  text-align: center;
-  color: #ff4d4d;
-  display: none;
-  margin-top: 10px;
-}
-
-/* animation */
-@keyframes fadeIn {
-  from {opacity: 0; transform: translateY(20px);}
-  to {opacity: 1; transform: translateY(0);}
+/* sections */
+section {
+  padding: 100px 10%;
 }
 </style>
 </head>
 
 <body>
 
-<form id="hireForm">
-  <h2>Hire Emma</h2>
+<nav>
+  <a href="#about">About</a>
+  <a href="#projects">Projects</a>
+  <a href="#contact">Contact</a>
+  <a class="btn" onclick="openModal()">Hire Me</a>
+</nav>
 
-  <input type="text" id="name" placeholder="Your name" required>
-  <input type="email" id="email" placeholder="Your email" required>
-  <textarea id="message" placeholder="What do you need?" required></textarea>
+<header>
+  <h1>Emma <span>Dev</span></h1>
+  <p>16 y/o developer from Sweden 🇸🇪</p>
+  <p>Building systems, servers & web experiences.</p>
 
-  <button id="submitBtn" type="submit">Send Request</button>
+  <a class="btn" onclick="openModal()">Hire Me</a>
+</header>
 
-  <div class="success" id="successMsg">🚀 Request sent!</div>
-  <div class="error" id="errorMsg"></div>
-</form>
+<section id="about">
+  <h2>About</h2>
+  <p>I'm Emma, a developer building systems and servers.</p>
+</section>
+
+<section id="projects">
+  <h2>Projects</h2>
+  <p>N5XH DUPE - Minecraft Server</p>
+</section>
+
+<section id="contact">
+  <h2>Contact</h2>
+  <p>Open for projects.</p>
+</section>
+
+<footer>© 2026 Emma</footer>
+
+<!-- 🔥 MODAL -->
+<div class="modal" id="modal">
+  <div class="modal-content">
+    <h3>Hire Emma</h3>
+
+    <input id="name" placeholder="Name">
+    <input id="email" placeholder="Email">
+    <textarea id="message" placeholder="Message"></textarea>
+
+    <button class="btn" onclick="sendHire()" id="sendBtn">Send</button>
+
+    <div class="success" id="success">🚀 Sent!</div>
+  </div>
+</div>
 
 <script>
-const form = document.getElementById("hireForm");
-const btn = document.getElementById("submitBtn");
-const success = document.getElementById("successMsg");
-const errorBox = document.getElementById("errorMsg");
+function openModal() {
+  document.getElementById("modal").style.display = "flex";
+}
 
-form.addEventListener("submit", async (e) => {
-  e.preventDefault();
+async function sendHire() {
+  const btn = document.getElementById("sendBtn");
+  const success = document.getElementById("success");
+
+  btn.innerText = "Sending...";
+  btn.disabled = true;
 
   const name = document.getElementById("name").value;
   const email = document.getElementById("email").value;
   const message = document.getElementById("message").value;
 
-  btn.innerText = "Sending...";
-  btn.disabled = true;
-  errorBox.style.display = "none";
+  const res = await fetch("/api/hire-emma", {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json"
+    },
+    body: JSON.stringify({ name, email, message })
+  });
 
-  try {
-    const res = await fetch("https://bott-production-bfa4.up.railway.app/send", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json"
-      },
-      body: JSON.stringify({
-        type: "emma",
-        name,
-        email,
-        message
-      })
-    });
+  const data = await res.json();
 
-    const data = await res.json();
-
-    if (!res.ok || data.error) {
-      errorBox.innerText = data.error || "Failed to send";
-      errorBox.style.display = "block";
-      btn.innerText = "Send Request";
-      btn.disabled = false;
-      return;
-    }
-
-    form.reset();
-    success.style.display = "block";
-    btn.style.display = "none";
-
-  } catch (err) {
-    errorBox.innerText = "Connection error (check backend)";
-    errorBox.style.display = "block";
-    btn.innerText = "Send Request";
+  if (data.error) {
+    alert(data.error);
+    btn.innerText = "Send";
     btn.disabled = false;
+    return;
   }
-});
+
+  success.style.display = "block";
+  btn.style.display = "none";
+}
 </script>
 
 </body>
