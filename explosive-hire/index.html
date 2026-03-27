@@ -42,7 +42,7 @@ body::before {
   100% { transform: translate(0,0); }
 }
 
-/* 💎 glass form */
+/* 💎 form */
 form {
   background: rgba(255,255,255,0.05);
   backdrop-filter: blur(15px);
@@ -56,7 +56,6 @@ h2 {
   margin-bottom: 15px;
 }
 
-/* inputs */
 input, textarea {
   width: 100%;
   margin: 10px 0;
@@ -82,18 +81,24 @@ button {
   color: white;
   cursor: pointer;
   transition: 0.3s;
-  box-shadow: 0 0 15px rgba(255,0,0,0.4);
 }
 
 button:hover {
   transform: scale(1.08);
-  box-shadow: 0 0 30px rgba(255,0,0,0.7);
 }
 
-/* success message */
+/* success */
 .success {
   text-align: center;
   margin-top: 15px;
+  display: none;
+}
+
+/* error */
+.error {
+  text-align: center;
+  margin-top: 10px;
+  color: #ff4d4d;
   display: none;
 }
 
@@ -116,25 +121,33 @@ button:hover {
 
   <button id="btn">Send Request</button>
 
-  <div class="success" id="success">
-    🚀 Request sent!
-  </div>
+  <div class="success" id="success">🚀 Request sent!</div>
+  <div class="error" id="error"></div>
 </form>
 
 <script>
 const form = document.getElementById("form");
 const btn = document.getElementById("btn");
 const success = document.getElementById("success");
+const errorBox = document.getElementById("error");
 
 form.addEventListener("submit", async (e) => {
   e.preventDefault();
 
-  const name = document.getElementById("name").value;
-  const email = document.getElementById("email").value;
-  const message = document.getElementById("message").value;
+  const name = document.getElementById("name").value.trim();
+  const email = document.getElementById("email").value.trim();
+  const message = document.getElementById("message").value.trim();
+
+  // basic validation
+  if (!name || !email || !message) {
+    errorBox.innerText = "Please fill all fields";
+    errorBox.style.display = "block";
+    return;
+  }
 
   btn.innerText = "Sending...";
   btn.disabled = true;
+  errorBox.style.display = "none";
 
   try {
     const res = await fetch("/api/hire-explosive", {
@@ -147,19 +160,21 @@ form.addEventListener("submit", async (e) => {
 
     const data = await res.json();
 
-    if (data.error) {
-      alert(data.error);
+    if (!res.ok || data.error) {
+      errorBox.innerText = data.error || "Failed to send";
+      errorBox.style.display = "block";
       btn.innerText = "Send Request";
       btn.disabled = false;
       return;
     }
 
     form.reset();
-    btn.style.display = "none";
     success.style.display = "block";
+    btn.style.display = "none";
 
   } catch (err) {
-    alert("Something went wrong");
+    errorBox.innerText = "Connection error";
+    errorBox.style.display = "block";
     btn.innerText = "Send Request";
     btn.disabled = false;
   }
