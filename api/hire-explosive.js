@@ -1,31 +1,40 @@
-export default async function handler(req, res) {
-  if (req.method !== "POST") {
-    return res.status(405).json({ error: "Method not allowed" });
-  }
+<script>
+form.addEventListener("submit", async (e) => {
+  e.preventDefault();
 
-  const { name, email, message } = req.body;
+  const name = document.getElementById("name").value;
+  const email = document.getElementById("email").value;
+  const message = document.getElementById("message").value;
 
-  if (!name || !email || !message) {
-    return res.status(400).json({ error: "Missing fields" });
-  }
+  btn.innerText = "Sending...";
+  btn.disabled = true;
 
   try {
-    await fetch("https://bott-production-bfa4.up.railway.app/send", {
+    const res = await fetch("/api/hire-emma", {
       method: "POST",
       headers: {
         "Content-Type": "application/json"
       },
-      body: JSON.stringify({
-        type: "explosive",
-        name,
-        email,
-        message
-      })
+      body: JSON.stringify({ name, email, message })
     });
 
-    return res.status(200).json({ success: true });
+    const data = await res.json();
+
+    if (data.error) {
+      alert(data.error);
+      btn.innerText = "Send Request";
+      btn.disabled = false;
+      return;
+    }
+
+    form.reset();
+    success.style.display = "block";
+    btn.style.display = "none";
 
   } catch (err) {
-    return res.status(500).json({ error: err.message });
+    alert("Something went wrong");
+    btn.innerText = "Send Request";
+    btn.disabled = false;
   }
-}
+});
+</script>
