@@ -100,170 +100,405 @@
 
     const GROUND_HEIGHT = 88;
     const FLOOR_Y = canvas.height - GROUND_HEIGHT;
+    const CEILING_Y = 34;
+    const PLAYER_X = 170;
+    const SEGMENT_LENGTH = 1700;
+
+    const MODES = {
+      cube: { color: "#49f2ff", label: "CUBE" },
+      ship: { color: "#9efc78", label: "SHIP" },
+      ball: { color: "#ff8ec6", label: "BALL" }
+    };
+
+    const SEGMENTS = [
+      {
+        name: "Neon Rise",
+        mode: "cube",
+        colors: ["#12264f", "#091425", "#49f2ff"],
+        obstacles: [
+          ["spike", 450, 0, 1], ["spike", 700, 0, 2], ["block", 1010, 0, 72, 72],
+          ["spike", 1094, 72, 1], ["spike", 1330, 0, 3], ["block", 1510, 0, 110, 110]
+        ]
+      },
+      {
+        name: "Sky Drive",
+        mode: "ship",
+        colors: ["#173f4d", "#09151c", "#9efc78"],
+        obstacles: [
+          ["pillarTop", 430, 0, 90, 164], ["pillarBottom", 700, 0, 100, 146],
+          ["pillarTop", 980, 0, 120, 200], ["pillarBottom", 1260, 0, 86, 160],
+          ["pillarTop", 1510, 0, 100, 142]
+        ]
+      },
+      {
+        name: "Gravity Hall",
+        mode: "ball",
+        colors: ["#4b1d50", "#16081e", "#ff8ec6"],
+        obstacles: [
+          ["spike", 430, 0, 2], ["ceilingSpike", 710, 0, 2], ["block", 930, 0, 94, 94],
+          ["ceilingBlock", 1110, 0, 120, 80], ["spike", 1390, 0, 2], ["ceilingSpike", 1600, 0, 3]
+        ]
+      },
+      {
+        name: "Final Surge",
+        mode: "cube",
+        colors: ["#5f2a14", "#170b08", "#ffe45c"],
+        obstacles: [
+          ["spike", 420, 0, 2], ["block", 690, 0, 78, 78], ["spike", 796, 78, 1],
+          ["spike", 980, 0, 3], ["block", 1220, 0, 84, 140], ["spike", 1324, 140, 1],
+          ["spike", 1500, 0, 2]
+        ]
+      }
+    ];
 
     const state = {
       started: false,
       over: false,
+      won: false,
       time: 0,
-      speed: 360,
+      speed: 390,
       score: 0,
       best: Number(localStorage.getItem("mini-geo-best") || 0),
-      flash: 0
+      flash: 0,
+      distance: 0,
+      levelIndex: 0
     };
 
     const player = {
-      x: 170,
+      x: PLAYER_X,
       y: FLOOR_Y - 44,
-      size: 44,
+      width: 44,
+      height: 44,
       vy: 0,
       rotation: 0,
       grounded: true,
-      jumpForce: 720,
-      gravity: 1950
+      gravityDir: 1,
+      mode: "cube"
+    };
+
+    const input = {
+      held: false
     };
 
     const obstacles = [];
+    const portals = [];
     const particles = [];
+    let generatedSegmentCount = 0;
 
     function resetGame() {
       state.started = true;
       state.over = false;
+      state.won = false;
       state.time = 0;
-      state.speed = 360;
+      state.speed = 390;
       state.score = 0;
       state.flash = 0;
-      player.y = FLOOR_Y - player.size;
+      state.distance = 0;
+      state.levelIndex = 0;
+      generatedSegmentCount = 0;
+      obstacles.length = 0;
+      portals.length = 0;
+      particles.length = 0;
+      player.x = PLAYER_X;
+      player.y = FLOOR_Y - player.height;
       player.vy = 0;
       player.rotation = 0;
       player.grounded = true;
-      obstacles.length = 0;
-      particles.length = 0;
+      player.gravityDir = 1;
+      setMode("cube", false);
+      generateUntil(3);
     }
 
-    function jump() {
-      if (!state.started || state.over) {
-        resetGame();
-      }
-      if (player.grounded && !state.over) {
-        player.vy = -player.jumpForce;
+    function setMode(mode, burst = true) {
+      player.mode = mode;
+      if (mode === "ship") {
+        player.width = 54;
+        player.height = 30;
         player.grounded = false;
-        spawnJumpParticles();
+      } else if (mode === "ball") {
+        player.width = 40;
+        player.height = 40;
+      } else {
+        player.width = 44;
+        player.height = 44;
+      }
+
+      if (player.gravityDir === 1) {
+        player.y = Math.min(player.y, FLOOR_Y - player.height);
+      } else {
+        player.y = Math.max(player.y, CEILING_Y);
+      }
+
+      if (burst) {
+        spawnPortalParticles(player.x + player.width / 2, player.y + player.height / 2, MODES[mode].color);
       }
     }
 
-    function spawnJumpParticles() {
+    function activateInput() {
+      if (!state.started || state.over || state.won) {
+        resetGame();
+        return;
+      }
+
+      if (player.mode === "cube") {
+        if (player.grounded) {
+          player.vy = -780 * player.gravityDir;
+          player.grounded = false;
+          spawnJumpParticles(MODES.cube.color);
+        }
+      } else if (player.mode === "ball") {
+        player.gravityDir *= -1;
+        player.grounded = false;
+        if (player.gravityDir === -1 && player.vy > -160) {
+          player.vy = -160;
+        }
+        if (player.gravityDir === 1 && player.vy < 160) {
+          player.vy = 160;
+        }
+        spawnJumpParticles(MODES.ball.color);
+      }
+    }
+
+    function spawnJumpParticles(color) {
       for (let i = 0; i < 10; i += 1) {
         particles.push({
-          x: player.x + player.size / 2,
-          y: player.y + player.size,
-          vx: -120 + Math.random() * 160,
-          vy: -60 - Math.random() * 90,
-          life: 0.45 + Math.random() * 0.3,
+          x: player.x + player.width / 2,
+          y: player.y + player.height / 2,
+          vx: -120 + Math.random() * 180,
+          vy: -100 + Math.random() * 120,
+          life: 0.42 + Math.random() * 0.25,
           size: 4 + Math.random() * 6,
-          color: Math.random() > 0.5 ? "#49f2ff" : "#ffe45c"
+          color
+        });
+      }
+    }
+
+    function spawnPortalParticles(x, y, color) {
+      for (let i = 0; i < 22; i += 1) {
+        particles.push({
+          x,
+          y,
+          vx: -220 + Math.random() * 440,
+          vy: -220 + Math.random() * 440,
+          life: 0.45 + Math.random() * 0.35,
+          size: 4 + Math.random() * 7,
+          color
         });
       }
     }
 
     function spawnCrashParticles() {
-      for (let i = 0; i < 28; i += 1) {
+      for (let i = 0; i < 30; i += 1) {
         particles.push({
-          x: player.x + player.size / 2,
-          y: player.y + player.size / 2,
-          vx: -260 + Math.random() * 520,
-          vy: -280 + Math.random() * 520,
-          life: 0.5 + Math.random() * 0.55,
+          x: player.x + player.width / 2,
+          y: player.y + player.height / 2,
+          vx: -280 + Math.random() * 560,
+          vy: -300 + Math.random() * 560,
+          life: 0.5 + Math.random() * 0.6,
           size: 6 + Math.random() * 8,
           color: Math.random() > 0.5 ? "#ff4f74" : "#ffffff"
         });
       }
     }
 
-    function addObstacle() {
-      const spikeWidth = 34 + Math.random() * 12;
-      const spikeHeight = 34 + Math.random() * 34;
-      const cluster = Math.random() < 0.33 ? 2 : 1;
+    function addRectObstacle(x, y, width, height, style = "block") {
+      obstacles.push({ x, y, width, height, style, passed: false });
+    }
 
-      for (let i = 0; i < cluster; i += 1) {
+    function addSpikeRow(x, count, fromCeiling = false, offsetY = 0) {
+      for (let i = 0; i < count; i += 1) {
+        const width = 34;
+        const height = 38;
         obstacles.push({
-          x: canvas.width + i * (spikeWidth + 8),
-          y: FLOOR_Y - spikeHeight,
-          width: spikeWidth,
-          height: spikeHeight,
+          x: x + i * (width + 2),
+          y: fromCeiling ? CEILING_Y + offsetY : FLOOR_Y - height - offsetY,
+          width,
+          height,
+          style: fromCeiling ? "ceilingSpike" : "spike",
           passed: false
         });
       }
     }
 
-    function rectsIntersect(a, b) {
-      return (
-        a.x < b.x + b.width &&
-        a.x + a.width > b.x &&
-        a.y < b.y + b.height &&
-        a.y + a.height > b.y
-      );
+    function createSegment(segmentIndex) {
+      const segment = SEGMENTS[segmentIndex % SEGMENTS.length];
+      const worldStart = generatedSegmentCount * SEGMENT_LENGTH;
+
+      if (generatedSegmentCount > 0) {
+        portals.push({
+          x: worldStart + 180,
+          y: canvas.height / 2 - 58,
+          width: 56,
+          height: 116,
+          mode: segment.mode,
+          used: false
+        });
+      }
+
+      for (const obstacle of segment.obstacles) {
+        const [type, offsetX, offsetY, a, b] = obstacle;
+        const x = worldStart + offsetX;
+        if (type === "spike") {
+          addSpikeRow(x, a, false, offsetY);
+        } else if (type === "ceilingSpike") {
+          addSpikeRow(x, a, true, offsetY);
+        } else if (type === "block") {
+          addRectObstacle(x, FLOOR_Y - b - offsetY, a, b, "block");
+        } else if (type === "ceilingBlock") {
+          addRectObstacle(x, CEILING_Y + offsetY, a, b, "ceilingBlock");
+        } else if (type === "pillarTop") {
+          addRectObstacle(x, CEILING_Y, a, b, "pillarTop");
+        } else if (type === "pillarBottom") {
+          addRectObstacle(x, FLOOR_Y - b, a, b, "pillarBottom");
+        }
+      }
+
+      generatedSegmentCount += 1;
     }
 
-    function update(delta) {
-      if (!state.started) {
-        state.time += delta;
-        player.rotation = Math.sin(state.time * 3) * 0.08;
+    function generateUntil(countAhead) {
+      while (generatedSegmentCount < countAhead) {
+        createSegment(generatedSegmentCount);
+      }
+    }
+
+    function rectsIntersect(a, b) {
+      return a.x < b.x + b.width && a.x + a.width > b.x && a.y < b.y + b.height && a.y + a.height > b.y;
+    }
+
+    function crash() {
+      if (state.over || state.won) {
         return;
       }
+      state.over = true;
+      state.flash = 1;
+      state.best = Math.max(state.best, Math.floor(state.score));
+      localStorage.setItem("mini-geo-best", String(state.best));
+      spawnCrashParticles();
+    }
 
-      state.flash = Math.max(0, state.flash - delta * 2.4);
-      updateParticles(delta);
+    function winGame() {
+      state.won = true;
+      state.best = Math.max(state.best, Math.floor(state.score));
+      localStorage.setItem("mini-geo-best", String(state.best));
+      state.flash = 1;
+      spawnPortalParticles(player.x + player.width / 2, player.y + player.height / 2, "#ffe45c");
+    }
 
-      if (state.over) {
-        return;
+    function updatePlayer(delta) {
+      if (player.mode === "ship") {
+        const thrust = input.held ? -1 : 1;
+        player.vy += thrust * 1280 * delta;
+        player.vy *= 0.992;
+        player.rotation = Math.max(-0.65, Math.min(0.65, player.vy / 420));
+      } else {
+        player.vy += 2100 * player.gravityDir * delta;
+        player.rotation += delta * 7.8 * player.gravityDir;
       }
 
-      state.time += delta;
-      state.speed += delta * 10;
-      state.score += delta * 10;
-
-      player.vy += player.gravity * delta;
       player.y += player.vy * delta;
-      player.rotation += delta * 7.6;
+      player.grounded = false;
 
-      if (player.y + player.size >= FLOOR_Y) {
-        player.y = FLOOR_Y - player.size;
-        player.vy = 0;
-        player.rotation = 0;
-        player.grounded = true;
+      if (player.gravityDir === 1) {
+        if (player.y + player.height >= FLOOR_Y) {
+          player.y = FLOOR_Y - player.height;
+          player.vy = 0;
+          player.grounded = true;
+          if (player.mode === "cube") {
+            player.rotation = 0;
+          }
+        }
+        if (player.y <= CEILING_Y && player.mode === "ship") {
+          player.y = CEILING_Y;
+          player.vy = 40;
+        }
+      } else {
+        if (player.y <= CEILING_Y) {
+          player.y = CEILING_Y;
+          player.vy = 0;
+          player.grounded = true;
+          if (player.mode !== "ship") {
+            player.rotation = Math.PI;
+          }
+        }
+        if (player.y + player.height >= FLOOR_Y && player.mode === "ship") {
+          player.y = FLOOR_Y - player.height;
+          player.vy = -40;
+        }
       }
 
-      const spawnGap = Math.max(0.82, 1.55 - state.speed / 700);
-      const last = obstacles[obstacles.length - 1];
-      if (!last || canvas.width - last.x > state.speed * spawnGap) {
-        addObstacle();
+      if (player.mode === "ball" && player.grounded) {
+        player.rotation += delta * 3.6 * player.gravityDir;
       }
+
+      if (player.mode === "ship") {
+        if (player.y < CEILING_Y - 4 || player.y + player.height > FLOOR_Y + 4) {
+          crash();
+        }
+      }
+    }
+
+    function updateWorld(delta) {
+      state.time += delta;
+      state.speed += delta * 8;
+      state.distance += state.speed * delta;
+      state.score = state.distance / 11;
+      state.levelIndex = Math.min(SEGMENTS.length - 1, Math.floor(state.distance / SEGMENT_LENGTH));
+      generateUntil(Math.floor(state.distance / SEGMENT_LENGTH) + 3);
+    }
+
+    function updatePortals() {
+      for (let i = portals.length - 1; i >= 0; i -= 1) {
+        const portal = portals[i];
+        const screenX = portal.x - state.distance + PLAYER_X;
+        portal.screenX = screenX;
+
+        if (!portal.used && rectsIntersect(
+          { x: player.x + 4, y: player.y + 4, width: player.width - 8, height: player.height - 8 },
+          { x: screenX, y: portal.y, width: portal.width, height: portal.height }
+        )) {
+          portal.used = true;
+          player.gravityDir = 1;
+          player.vy = 0;
+          setMode(portal.mode);
+          if (portal.mode !== "ship") {
+            player.y = Math.min(player.y, FLOOR_Y - player.height);
+          }
+        }
+
+        if (screenX + portal.width < -120) {
+          portals.splice(i, 1);
+        }
+      }
+    }
+
+    function updateObstacles() {
+      const hitbox = {
+        x: player.x + 6,
+        y: player.y + 6,
+        width: player.width - 12,
+        height: player.height - 12
+      };
 
       for (let i = obstacles.length - 1; i >= 0; i -= 1) {
         const obstacle = obstacles[i];
-        obstacle.x -= state.speed * delta;
+        obstacle.screenX = obstacle.x - state.distance + PLAYER_X;
 
-        if (!obstacle.passed && obstacle.x + obstacle.width < player.x) {
+        if (!obstacle.passed && obstacle.screenX + obstacle.width < player.x) {
           obstacle.passed = true;
-          state.score += 15;
+          state.score += 12;
         }
 
-        const hitbox = {
-          x: player.x + 6,
-          y: player.y + 6,
-          width: player.size - 12,
-          height: player.size - 12
-        };
-
-        if (rectsIntersect(hitbox, obstacle)) {
-          state.over = true;
-          state.flash = 1;
-          state.best = Math.max(state.best, Math.floor(state.score));
-          localStorage.setItem("mini-geo-best", String(state.best));
-          spawnCrashParticles();
+        if (rectsIntersect(hitbox, {
+          x: obstacle.screenX,
+          y: obstacle.y,
+          width: obstacle.width,
+          height: obstacle.height
+        })) {
+          crash();
         }
 
-        if (obstacle.x + obstacle.width < -60) {
+        if (obstacle.screenX + obstacle.width < -120) {
           obstacles.splice(i, 1);
         }
       }
@@ -282,103 +517,237 @@
       }
     }
 
-    function drawBackground() {
-      const scroll = (state.time * state.speed) / 6;
+    function update(delta) {
+      state.flash = Math.max(0, state.flash - delta * 2.4);
+      updateParticles(delta);
 
-      for (let i = 0; i < 18; i += 1) {
-        const x = ((i * 140 - scroll * 0.25) % (canvas.width + 180)) - 90;
-        const h = 90 + (i % 4) * 36;
-        ctx.fillStyle = "rgba(255,255,255,0.05)";
-        ctx.fillRect(x, FLOOR_Y - h - 42, 86, h);
+      if (!state.started) {
+        state.time += delta;
+        player.rotation = Math.sin(state.time * 3) * 0.08;
+        return;
       }
 
-      for (let i = 0; i < 24; i += 1) {
-        const x = ((i * 96 - scroll * 0.52) % (canvas.width + 120)) - 60;
-        const y = 70 + (i % 5) * 24;
-        ctx.fillStyle = "rgba(73,242,255,0.10)";
-        ctx.fillRect(x, y, 46, 46);
+      if (state.over || state.won) {
+        return;
+      }
+
+      updateWorld(delta);
+      updatePlayer(delta);
+      updatePortals();
+      updateObstacles();
+
+      if (state.distance > SEGMENTS.length * SEGMENT_LENGTH + 250) {
+        winGame();
+      }
+    }
+
+    function currentSegment() {
+      return SEGMENTS[Math.min(SEGMENTS.length - 1, Math.floor(state.distance / SEGMENT_LENGTH))];
+    }
+
+    function drawBackground() {
+      const segment = currentSegment();
+      const [top, bottom, accent] = segment.colors;
+      const sky = ctx.createLinearGradient(0, 0, 0, canvas.height);
+      sky.addColorStop(0, top);
+      sky.addColorStop(0.58, bottom);
+      sky.addColorStop(1, "#050811");
+      ctx.fillStyle = sky;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+      ctx.fillStyle = accent + "18";
+      const scroll = state.distance * 0.2;
+      for (let i = 0; i < 18; i += 1) {
+        const x = ((i * 144 - scroll) % (canvas.width + 220)) - 110;
+        const h = 80 + (i % 5) * 34;
+        ctx.fillRect(x, FLOOR_Y - h - 30, 88, h);
+      }
+
+      ctx.strokeStyle = accent + "33";
+      ctx.lineWidth = 2;
+      const gridOffset = (state.distance * 0.45) % 72;
+      for (let x = -72; x < canvas.width + 72; x += 72) {
+        ctx.beginPath();
+        ctx.moveTo(x - gridOffset, 0);
+        ctx.lineTo(x - gridOffset, FLOOR_Y);
+        ctx.stroke();
       }
     }
 
     function drawGround() {
+      const accent = currentSegment().colors[2];
       ctx.fillStyle = "#09101d";
       ctx.fillRect(0, FLOOR_Y, canvas.width, GROUND_HEIGHT);
 
-      const stripeOffset = (state.time * state.speed) % 56;
+      const stripeOffset = state.distance % 56;
       for (let x = -56; x < canvas.width + 56; x += 56) {
-        ctx.fillStyle = ((x / 56) & 1) === 0 ? "#0d1830" : "#102247";
+        ctx.fillStyle = ((Math.floor(x / 56)) & 1) === 0 ? "#0d1830" : "#102247";
         ctx.fillRect(x - stripeOffset, FLOOR_Y + 16, 42, 42);
       }
 
-      ctx.fillStyle = "#49f2ff";
+      ctx.fillStyle = accent;
       ctx.fillRect(0, FLOOR_Y - 6, canvas.width, 6);
+      ctx.fillRect(0, CEILING_Y - 6, canvas.width, 4);
     }
 
     function drawPlayer() {
+      const modeStyle = MODES[player.mode];
+
       ctx.save();
-      ctx.translate(player.x + player.size / 2, player.y + player.size / 2);
+      ctx.translate(player.x + player.width / 2, player.y + player.height / 2);
       ctx.rotate(player.rotation);
-
-      ctx.shadowColor = "rgba(73,242,255,0.6)";
+      ctx.shadowColor = modeStyle.color;
       ctx.shadowBlur = 18;
-      ctx.fillStyle = "#49f2ff";
-      ctx.fillRect(-player.size / 2, -player.size / 2, player.size, player.size);
 
-      ctx.shadowBlur = 0;
-      ctx.fillStyle = "#081226";
-      ctx.fillRect(-12, -12, 8, 8);
-      ctx.fillRect(4, -12, 8, 8);
-      ctx.fillRect(-10, 6, 20, 6);
+      if (player.mode === "ship") {
+        ctx.fillStyle = modeStyle.color;
+        ctx.beginPath();
+        ctx.moveTo(-player.width / 2, player.height / 2 - 2);
+        ctx.lineTo(-player.width / 2 + 10, -player.height / 2);
+        ctx.lineTo(player.width / 2, 0);
+        ctx.lineTo(-player.width / 2 + 10, player.height / 2);
+        ctx.closePath();
+        ctx.fill();
 
-      ctx.strokeStyle = "#ffffff";
-      ctx.lineWidth = 3;
-      ctx.strokeRect(-player.size / 2 + 2, -player.size / 2 + 2, player.size - 4, player.size - 4);
+        ctx.fillStyle = "#ffffff";
+        ctx.fillRect(-10, -6, 10, 12);
+        if (input.held && state.started && !state.over && !state.won) {
+          ctx.fillStyle = "#ffe45c";
+          ctx.beginPath();
+          ctx.moveTo(-player.width / 2 - 8, 0);
+          ctx.lineTo(-player.width / 2 - 26, -8);
+          ctx.lineTo(-player.width / 2 - 26, 8);
+          ctx.closePath();
+          ctx.fill();
+        }
+      } else if (player.mode === "ball") {
+        ctx.fillStyle = modeStyle.color;
+        ctx.beginPath();
+        ctx.arc(0, 0, player.width / 2, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.strokeStyle = "#ffffff";
+        ctx.lineWidth = 3;
+        ctx.stroke();
+        ctx.fillStyle = "#081226";
+        ctx.fillRect(-12, -4, 24, 8);
+      } else {
+        ctx.fillStyle = modeStyle.color;
+        ctx.fillRect(-player.width / 2, -player.height / 2, player.width, player.height);
+        ctx.fillStyle = "#081226";
+        ctx.fillRect(-12, -12, 8, 8);
+        ctx.fillRect(4, -12, 8, 8);
+        ctx.fillRect(-10, 6, 20, 6);
+        ctx.strokeStyle = "#ffffff";
+        ctx.lineWidth = 3;
+        ctx.strokeRect(-player.width / 2 + 2, -player.height / 2 + 2, player.width - 4, player.height - 4);
+      }
+
       ctx.restore();
     }
 
     function drawObstacles() {
       for (const obstacle of obstacles) {
+        const x = obstacle.screenX;
+        if (x > canvas.width + 120 || x + obstacle.width < -120) {
+          continue;
+        }
+
+        if (obstacle.style === "spike" || obstacle.style === "ceilingSpike") {
+          ctx.beginPath();
+          if (obstacle.style === "spike") {
+            ctx.moveTo(x, obstacle.y + obstacle.height);
+            ctx.lineTo(x + obstacle.width / 2, obstacle.y);
+            ctx.lineTo(x + obstacle.width, obstacle.y + obstacle.height);
+          } else {
+            ctx.moveTo(x, obstacle.y);
+            ctx.lineTo(x + obstacle.width / 2, obstacle.y + obstacle.height);
+            ctx.lineTo(x + obstacle.width, obstacle.y);
+          }
+          ctx.closePath();
+          const gradient = ctx.createLinearGradient(x, obstacle.y, x, obstacle.y + obstacle.height);
+          gradient.addColorStop(0, "#fff6a6");
+          gradient.addColorStop(0.45, "#ff8c5a");
+          gradient.addColorStop(1, "#ff4f74");
+          ctx.fillStyle = gradient;
+          ctx.fill();
+          ctx.strokeStyle = "#ffffff";
+          ctx.lineWidth = 2;
+          ctx.stroke();
+        } else {
+          ctx.fillStyle = obstacle.style === "ceilingBlock" || obstacle.style === "pillarTop" ? "#a04cff" : "#2cd0ff";
+          ctx.fillRect(x, obstacle.y, obstacle.width, obstacle.height);
+          ctx.strokeStyle = "#ffffff";
+          ctx.lineWidth = 2;
+          ctx.strokeRect(x, obstacle.y, obstacle.width, obstacle.height);
+        }
+      }
+    }
+
+    function drawPortals() {
+      for (const portal of portals) {
+        const x = portal.screenX;
+        if (x > canvas.width + 120 || x + portal.width < -120) {
+          continue;
+        }
+
+        const color = MODES[portal.mode].color;
+        ctx.save();
+        ctx.translate(x + portal.width / 2, portal.y + portal.height / 2);
+        ctx.strokeStyle = color;
+        ctx.lineWidth = 6;
+        ctx.shadowColor = color;
+        ctx.shadowBlur = 20;
         ctx.beginPath();
-        ctx.moveTo(obstacle.x, FLOOR_Y);
-        ctx.lineTo(obstacle.x + obstacle.width / 2, obstacle.y);
-        ctx.lineTo(obstacle.x + obstacle.width, FLOOR_Y);
-        ctx.closePath();
-
-        const gradient = ctx.createLinearGradient(obstacle.x, obstacle.y, obstacle.x, FLOOR_Y);
-        gradient.addColorStop(0, "#fff6a6");
-        gradient.addColorStop(0.45, "#ff8c5a");
-        gradient.addColorStop(1, "#ff4f74");
-        ctx.fillStyle = gradient;
-        ctx.fill();
-
-        ctx.strokeStyle = "#ffffff";
-        ctx.lineWidth = 2;
+        ctx.ellipse(0, 0, portal.width / 2, portal.height / 2, 0, 0, Math.PI * 2);
         ctx.stroke();
+        ctx.fillStyle = color + "30";
+        ctx.fill();
+        ctx.fillStyle = "#ffffff";
+        ctx.font = "bold 14px Verdana";
+        ctx.textAlign = "center";
+        ctx.fillText(MODES[portal.mode].label, 0, 5);
+        ctx.restore();
       }
     }
 
     function drawParticles() {
       for (const p of particles) {
-        ctx.globalAlpha = Math.max(0, p.life * 1.6);
+        ctx.globalAlpha = Math.max(0, p.life * 1.5);
         ctx.fillStyle = p.color;
         ctx.fillRect(p.x, p.y, p.size, p.size);
       }
       ctx.globalAlpha = 1;
     }
 
+    function drawProgressBar() {
+      const total = SEGMENTS.length * SEGMENT_LENGTH;
+      const progress = Math.min(1, state.distance / total);
+      ctx.fillStyle = "rgba(255,255,255,0.18)";
+      ctx.fillRect(canvas.width - 270, 26, 220, 14);
+      ctx.fillStyle = currentSegment().colors[2];
+      ctx.fillRect(canvas.width - 270, 26, 220 * progress, 14);
+      ctx.strokeStyle = "#ffffff";
+      ctx.strokeRect(canvas.width - 270, 26, 220, 14);
+    }
+
     function drawText() {
+      const segment = currentSegment();
       ctx.fillStyle = "#ffffff";
       ctx.font = "bold 30px Verdana";
       ctx.fillText(`Score: ${Math.floor(state.score)}`, 28, 42);
       ctx.fillText(`Best: ${state.best}`, 28, 78);
+      ctx.fillText(`Mode: ${MODES[player.mode].label}`, 28, 114);
+      ctx.fillText(`Level: ${segment.name}`, 28, 150);
+      drawProgressBar();
 
       if (!state.started) {
         ctx.textAlign = "center";
         ctx.font = "bold 48px Verdana";
-        ctx.fillText("CLICK OR PRESS SPACE", canvas.width / 2, 150);
-        ctx.font = "bold 28px Verdana";
+        ctx.fillText("CLICK OR PRESS SPACE", canvas.width / 2, 146);
+        ctx.font = "bold 26px Verdana";
         ctx.fillStyle = "#ffe45c";
-        ctx.fillText("Jump over spikes and keep the cube alive.", canvas.width / 2, 198);
+        ctx.fillText("Cube, ship, and ball portals across four level sections.", canvas.width / 2, 194);
+        ctx.fillText("Hold in ship mode. Tap in cube and ball mode.", canvas.width / 2, 230);
         ctx.textAlign = "left";
       }
 
@@ -392,6 +761,17 @@
         ctx.fillText("Press jump to restart", canvas.width / 2, 204);
         ctx.textAlign = "left";
       }
+
+      if (state.won) {
+        ctx.textAlign = "center";
+        ctx.font = "bold 56px Verdana";
+        ctx.fillStyle = "#ffe45c";
+        ctx.fillText("LEVEL CLEARED", canvas.width / 2, 156);
+        ctx.font = "bold 28px Verdana";
+        ctx.fillStyle = "#ffffff";
+        ctx.fillText("Press jump to run it again", canvas.width / 2, 204);
+        ctx.textAlign = "left";
+      }
     }
 
     function drawFlash() {
@@ -403,9 +783,9 @@
     }
 
     function render() {
-      ctx.clearRect(0, 0, canvas.width, canvas.height);
       drawBackground();
       drawGround();
+      drawPortals();
       drawObstacles();
       drawPlayer();
       drawParticles();
@@ -422,14 +802,32 @@
       requestAnimationFrame(loop);
     }
 
-    window.addEventListener("keydown", (event) => {
-      if (event.code === "Space" || event.code === "ArrowUp" || event.code === "KeyW") {
+    function pressAction(event) {
+      if (event) {
         event.preventDefault();
-        jump();
+      }
+      input.held = true;
+      activateInput();
+    }
+
+    function releaseAction() {
+      input.held = false;
+    }
+
+    window.addEventListener("keydown", (event) => {
+      if ((event.code === "Space" || event.code === "ArrowUp" || event.code === "KeyW") && !event.repeat) {
+        pressAction(event);
       }
     });
 
-    canvas.addEventListener("pointerdown", jump);
+    window.addEventListener("keyup", (event) => {
+      if (event.code === "Space" || event.code === "ArrowUp" || event.code === "KeyW") {
+        releaseAction();
+      }
+    });
+
+    canvas.addEventListener("pointerdown", pressAction);
+    window.addEventListener("pointerup", releaseAction);
     requestAnimationFrame(loop);
   </script>
 </body>
