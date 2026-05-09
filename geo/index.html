@@ -1,0 +1,436 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mini Geometry Dash</title>
+  <style>
+    :root {
+      --bg-1: #081226;
+      --bg-2: #12264f;
+      --bg-3: #1f4d7a;
+      --accent: #49f2ff;
+      --accent-2: #ffe45c;
+      --danger: #ff4f74;
+      --ground: #0a0f1e;
+      --panel: rgba(5, 10, 23, 0.68);
+      --text: #f6fbff;
+    }
+
+    * {
+      box-sizing: border-box;
+    }
+
+    html,
+    body {
+      margin: 0;
+      min-height: 100%;
+      background:
+        radial-gradient(circle at top, rgba(73, 242, 255, 0.16), transparent 30%),
+        linear-gradient(180deg, var(--bg-2), var(--bg-1) 55%, #050811);
+      color: var(--text);
+      font-family: Verdana, Geneva, Tahoma, sans-serif;
+      overflow: hidden;
+    }
+
+    body {
+      display: grid;
+      place-items: center;
+    }
+
+    .wrap {
+      width: min(100vw, 1100px);
+      padding: 18px;
+    }
+
+    .hud {
+      display: flex;
+      justify-content: space-between;
+      gap: 16px;
+      margin-bottom: 12px;
+      padding: 12px 16px;
+      background: var(--panel);
+      border: 2px solid rgba(73, 242, 255, 0.28);
+      border-radius: 14px;
+      backdrop-filter: blur(10px);
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.25);
+    }
+
+    .hud strong {
+      color: var(--accent);
+    }
+
+    canvas {
+      width: 100%;
+      height: auto;
+      display: block;
+      background:
+        linear-gradient(180deg, rgba(73, 242, 255, 0.08), transparent 36%),
+        linear-gradient(180deg, #16305f, #09101d 70%);
+      border: 3px solid rgba(255, 255, 255, 0.12);
+      border-radius: 18px;
+      box-shadow:
+        0 24px 60px rgba(0, 0, 0, 0.38),
+        inset 0 0 0 2px rgba(73, 242, 255, 0.08);
+    }
+
+    .tips {
+      margin-top: 12px;
+      padding: 10px 14px;
+      font-size: 14px;
+      color: rgba(246, 251, 255, 0.82);
+      background: rgba(255, 255, 255, 0.05);
+      border-radius: 10px;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="hud">
+      <div><strong>Mini Geometry Dash</strong></div>
+      <div>Jump: <strong>Space</strong> / <strong>Click</strong> / <strong>Tap</strong></div>
+    </div>
+    <canvas id="game" width="1100" height="460" aria-label="Mini Geometry Dash game"></canvas>
+    <div class="tips">Avoid spikes, survive as long as possible, and press jump again after crashing to restart.</div>
+  </div>
+
+  <script>
+    const canvas = document.getElementById("game");
+    const ctx = canvas.getContext("2d");
+
+    const GROUND_HEIGHT = 88;
+    const FLOOR_Y = canvas.height - GROUND_HEIGHT;
+
+    const state = {
+      started: false,
+      over: false,
+      time: 0,
+      speed: 360,
+      score: 0,
+      best: Number(localStorage.getItem("mini-geo-best") || 0),
+      flash: 0
+    };
+
+    const player = {
+      x: 170,
+      y: FLOOR_Y - 44,
+      size: 44,
+      vy: 0,
+      rotation: 0,
+      grounded: true,
+      jumpForce: 720,
+      gravity: 1950
+    };
+
+    const obstacles = [];
+    const particles = [];
+
+    function resetGame() {
+      state.started = true;
+      state.over = false;
+      state.time = 0;
+      state.speed = 360;
+      state.score = 0;
+      state.flash = 0;
+      player.y = FLOOR_Y - player.size;
+      player.vy = 0;
+      player.rotation = 0;
+      player.grounded = true;
+      obstacles.length = 0;
+      particles.length = 0;
+    }
+
+    function jump() {
+      if (!state.started || state.over) {
+        resetGame();
+      }
+      if (player.grounded && !state.over) {
+        player.vy = -player.jumpForce;
+        player.grounded = false;
+        spawnJumpParticles();
+      }
+    }
+
+    function spawnJumpParticles() {
+      for (let i = 0; i < 10; i += 1) {
+        particles.push({
+          x: player.x + player.size / 2,
+          y: player.y + player.size,
+          vx: -120 + Math.random() * 160,
+          vy: -60 - Math.random() * 90,
+          life: 0.45 + Math.random() * 0.3,
+          size: 4 + Math.random() * 6,
+          color: Math.random() > 0.5 ? "#49f2ff" : "#ffe45c"
+        });
+      }
+    }
+
+    function spawnCrashParticles() {
+      for (let i = 0; i < 28; i += 1) {
+        particles.push({
+          x: player.x + player.size / 2,
+          y: player.y + player.size / 2,
+          vx: -260 + Math.random() * 520,
+          vy: -280 + Math.random() * 520,
+          life: 0.5 + Math.random() * 0.55,
+          size: 6 + Math.random() * 8,
+          color: Math.random() > 0.5 ? "#ff4f74" : "#ffffff"
+        });
+      }
+    }
+
+    function addObstacle() {
+      const spikeWidth = 34 + Math.random() * 12;
+      const spikeHeight = 34 + Math.random() * 34;
+      const cluster = Math.random() < 0.33 ? 2 : 1;
+
+      for (let i = 0; i < cluster; i += 1) {
+        obstacles.push({
+          x: canvas.width + i * (spikeWidth + 8),
+          y: FLOOR_Y - spikeHeight,
+          width: spikeWidth,
+          height: spikeHeight,
+          passed: false
+        });
+      }
+    }
+
+    function rectsIntersect(a, b) {
+      return (
+        a.x < b.x + b.width &&
+        a.x + a.width > b.x &&
+        a.y < b.y + b.height &&
+        a.y + a.height > b.y
+      );
+    }
+
+    function update(delta) {
+      if (!state.started) {
+        state.time += delta;
+        player.rotation = Math.sin(state.time * 3) * 0.08;
+        return;
+      }
+
+      state.flash = Math.max(0, state.flash - delta * 2.4);
+      updateParticles(delta);
+
+      if (state.over) {
+        return;
+      }
+
+      state.time += delta;
+      state.speed += delta * 10;
+      state.score += delta * 10;
+
+      player.vy += player.gravity * delta;
+      player.y += player.vy * delta;
+      player.rotation += delta * 7.6;
+
+      if (player.y + player.size >= FLOOR_Y) {
+        player.y = FLOOR_Y - player.size;
+        player.vy = 0;
+        player.rotation = 0;
+        player.grounded = true;
+      }
+
+      const spawnGap = Math.max(0.82, 1.55 - state.speed / 700);
+      const last = obstacles[obstacles.length - 1];
+      if (!last || canvas.width - last.x > state.speed * spawnGap) {
+        addObstacle();
+      }
+
+      for (let i = obstacles.length - 1; i >= 0; i -= 1) {
+        const obstacle = obstacles[i];
+        obstacle.x -= state.speed * delta;
+
+        if (!obstacle.passed && obstacle.x + obstacle.width < player.x) {
+          obstacle.passed = true;
+          state.score += 15;
+        }
+
+        const hitbox = {
+          x: player.x + 6,
+          y: player.y + 6,
+          width: player.size - 12,
+          height: player.size - 12
+        };
+
+        if (rectsIntersect(hitbox, obstacle)) {
+          state.over = true;
+          state.flash = 1;
+          state.best = Math.max(state.best, Math.floor(state.score));
+          localStorage.setItem("mini-geo-best", String(state.best));
+          spawnCrashParticles();
+        }
+
+        if (obstacle.x + obstacle.width < -60) {
+          obstacles.splice(i, 1);
+        }
+      }
+    }
+
+    function updateParticles(delta) {
+      for (let i = particles.length - 1; i >= 0; i -= 1) {
+        const p = particles[i];
+        p.life -= delta;
+        p.x += p.vx * delta;
+        p.y += p.vy * delta;
+        p.vy += 900 * delta;
+        if (p.life <= 0) {
+          particles.splice(i, 1);
+        }
+      }
+    }
+
+    function drawBackground() {
+      const scroll = (state.time * state.speed) / 6;
+
+      for (let i = 0; i < 18; i += 1) {
+        const x = ((i * 140 - scroll * 0.25) % (canvas.width + 180)) - 90;
+        const h = 90 + (i % 4) * 36;
+        ctx.fillStyle = "rgba(255,255,255,0.05)";
+        ctx.fillRect(x, FLOOR_Y - h - 42, 86, h);
+      }
+
+      for (let i = 0; i < 24; i += 1) {
+        const x = ((i * 96 - scroll * 0.52) % (canvas.width + 120)) - 60;
+        const y = 70 + (i % 5) * 24;
+        ctx.fillStyle = "rgba(73,242,255,0.10)";
+        ctx.fillRect(x, y, 46, 46);
+      }
+    }
+
+    function drawGround() {
+      ctx.fillStyle = "#09101d";
+      ctx.fillRect(0, FLOOR_Y, canvas.width, GROUND_HEIGHT);
+
+      const stripeOffset = (state.time * state.speed) % 56;
+      for (let x = -56; x < canvas.width + 56; x += 56) {
+        ctx.fillStyle = ((x / 56) & 1) === 0 ? "#0d1830" : "#102247";
+        ctx.fillRect(x - stripeOffset, FLOOR_Y + 16, 42, 42);
+      }
+
+      ctx.fillStyle = "#49f2ff";
+      ctx.fillRect(0, FLOOR_Y - 6, canvas.width, 6);
+    }
+
+    function drawPlayer() {
+      ctx.save();
+      ctx.translate(player.x + player.size / 2, player.y + player.size / 2);
+      ctx.rotate(player.rotation);
+
+      ctx.shadowColor = "rgba(73,242,255,0.6)";
+      ctx.shadowBlur = 18;
+      ctx.fillStyle = "#49f2ff";
+      ctx.fillRect(-player.size / 2, -player.size / 2, player.size, player.size);
+
+      ctx.shadowBlur = 0;
+      ctx.fillStyle = "#081226";
+      ctx.fillRect(-12, -12, 8, 8);
+      ctx.fillRect(4, -12, 8, 8);
+      ctx.fillRect(-10, 6, 20, 6);
+
+      ctx.strokeStyle = "#ffffff";
+      ctx.lineWidth = 3;
+      ctx.strokeRect(-player.size / 2 + 2, -player.size / 2 + 2, player.size - 4, player.size - 4);
+      ctx.restore();
+    }
+
+    function drawObstacles() {
+      for (const obstacle of obstacles) {
+        ctx.beginPath();
+        ctx.moveTo(obstacle.x, FLOOR_Y);
+        ctx.lineTo(obstacle.x + obstacle.width / 2, obstacle.y);
+        ctx.lineTo(obstacle.x + obstacle.width, FLOOR_Y);
+        ctx.closePath();
+
+        const gradient = ctx.createLinearGradient(obstacle.x, obstacle.y, obstacle.x, FLOOR_Y);
+        gradient.addColorStop(0, "#fff6a6");
+        gradient.addColorStop(0.45, "#ff8c5a");
+        gradient.addColorStop(1, "#ff4f74");
+        ctx.fillStyle = gradient;
+        ctx.fill();
+
+        ctx.strokeStyle = "#ffffff";
+        ctx.lineWidth = 2;
+        ctx.stroke();
+      }
+    }
+
+    function drawParticles() {
+      for (const p of particles) {
+        ctx.globalAlpha = Math.max(0, p.life * 1.6);
+        ctx.fillStyle = p.color;
+        ctx.fillRect(p.x, p.y, p.size, p.size);
+      }
+      ctx.globalAlpha = 1;
+    }
+
+    function drawText() {
+      ctx.fillStyle = "#ffffff";
+      ctx.font = "bold 30px Verdana";
+      ctx.fillText(`Score: ${Math.floor(state.score)}`, 28, 42);
+      ctx.fillText(`Best: ${state.best}`, 28, 78);
+
+      if (!state.started) {
+        ctx.textAlign = "center";
+        ctx.font = "bold 48px Verdana";
+        ctx.fillText("CLICK OR PRESS SPACE", canvas.width / 2, 150);
+        ctx.font = "bold 28px Verdana";
+        ctx.fillStyle = "#ffe45c";
+        ctx.fillText("Jump over spikes and keep the cube alive.", canvas.width / 2, 198);
+        ctx.textAlign = "left";
+      }
+
+      if (state.over) {
+        ctx.textAlign = "center";
+        ctx.font = "bold 62px Verdana";
+        ctx.fillStyle = "#ff4f74";
+        ctx.fillText("CRASHED", canvas.width / 2, 156);
+        ctx.font = "bold 28px Verdana";
+        ctx.fillStyle = "#ffffff";
+        ctx.fillText("Press jump to restart", canvas.width / 2, 204);
+        ctx.textAlign = "left";
+      }
+    }
+
+    function drawFlash() {
+      if (state.flash <= 0) {
+        return;
+      }
+      ctx.fillStyle = `rgba(255,255,255,${state.flash * 0.35})`;
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+    }
+
+    function render() {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      drawBackground();
+      drawGround();
+      drawObstacles();
+      drawPlayer();
+      drawParticles();
+      drawText();
+      drawFlash();
+    }
+
+    let lastTime = performance.now();
+    function loop(now) {
+      const delta = Math.min((now - lastTime) / 1000, 0.033);
+      lastTime = now;
+      update(delta);
+      render();
+      requestAnimationFrame(loop);
+    }
+
+    window.addEventListener("keydown", (event) => {
+      if (event.code === "Space" || event.code === "ArrowUp" || event.code === "KeyW") {
+        event.preventDefault();
+        jump();
+      }
+    });
+
+    canvas.addEventListener("pointerdown", jump);
+    requestAnimationFrame(loop);
+  </script>
+</body>
+</html>
